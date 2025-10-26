@@ -196,12 +196,29 @@ def facilitator_settle(x_payment_b64: str, requirements: Dict[str, Any]) -> Tupl
         return False, None, str(e)
 
 
+def wants_json() -> bool:
+    try:
+        fmt = (request.args.get("format") or request.args.get("accept") or "").lower().strip()
+        if fmt in {"json", "application/json"}:
+            return True
+        accept = (request.headers.get("Accept") or "").lower()
+        if "application/json" in accept and "text/html" not in accept:
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def make_payment_required_page(reason: str | None = None):
-    # Return the UI page with a 402 status and embed requirements
+    # Return 402 with JSON if API/CLI caller, otherwise HTML page for browsers
     reqs = payment_requirements()
-    bf_key = os.environ.get("BLOCKFROST_PROJECT_ID", "")
-    resp = make_response(render_template("index.html", requirements=reqs, bf_key=bf_key), 402)
-    resp.headers["Content-Type"] = "text/html; charset=utf-8"
+    if wants_json():
+        resp = make_response(jsonify(reqs), 402)
+        resp.headers["Content-Type"] = "application/json"
+    else:
+        bf_key = os.environ.get("BLOCKFROST_PROJECT_ID", "")
+        resp = make_response(render_template("index.html", requirements=reqs, bf_key=bf_key), 402)
+        resp.headers["Content-Type"] = "text/html; charset=utf-8"
     if reason:
         resp.headers["X-PAYMENT-ERROR"] = reason[:200]
     return resp
