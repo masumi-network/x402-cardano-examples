@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>x402 Cardano Demo</title>
+    <link rel="stylesheet" href="https://unpkg.com/98.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <div id="mobileWarning" class="mobile-warning" style="display:none;">
+      <div class="window" style="width: 320px;">
+        <div class="title-bar">
+          <div class="title-bar-text">Notice</div>
+          <div class="title-bar-controls">
+            <button aria-label="Close" onclick="this.closest('.mobile-warning').style.display='none'"></button>
+          </div>
+        </div>
+        <div class="window-body">
+          <p>This demo currently works best on Desktop browsers.</p>
+          <p>Please visit on a desktop device to continue.</p>
+        </div>
+      </div>
+    </div>
+    <main>
+      <div class="window" style="width: 980px;">
+        <div class="title-bar">
+          <div class="title-bar-text">x402 Paywall · Cardano</div>
+          <div class="title-bar-controls">
+            <button aria-label="Help"></button>
+            <button aria-label="Minimize"></button>
+            <button aria-label="Close"></button>
+          </div>
+        </div>
+        <div class="window-body">
+          <pre class="ascii-banner">
+        ___ _____  _____   _____               _                   
+       /   |  _  |/ __  \ /  __ \             | |                  
+__  __/ /| | |/' |`' / /' | /  \/ __ _ _ __ __| | __ _ _ __   ___  
+\ \/ / /_| |  /| |  / /   | |    / _` | '__/ _` |/ _` | '_ \ / _ \ 
+ >  <\___  \ |_/ /./ /___ | \__/\ (_| | | | (_| | (_| | | | | (_) |
+/_/\_\   _/\___/ \_____/  \____/\__,_|_|  \__,_|\__,_|_| |_|\___/ 
+          </pre>
+          <div class="field-row-stacked">
+            <p class="sub">
+              This page is a demonstration of the x402 standard on Cardano.
+            </p>
+            <p class="hint small">This demo will mint you a meme coin (test only) after payment. Still in development — see the code on <a href="https://github.com/masumi-network/x402-cardano/tree/main" target="_blank" rel="noreferrer">GitHub</a>.</p>
+          </div>
+
+          <div class="field-row" style="justify-content: space-between; align-items: center;">
+            <a href="https://www.x402.org/" target="_blank" rel="noreferrer">Learn more at x402.org</a>
+            <img src="https://www.x402.org/_next/image?url=%2Fx402-button-large.png&w=640&q=75" alt="x402 Enabled" style="height: 28px" />
+          </div>
+
+          <fieldset id="stepIntro" style="margin-top: 10px;">
+            <legend>Step 0 · What is x402?</legend>
+            <div class="field-row-stacked">
+              <p><strong>What is the x402 Standard?</strong> It’s a simple way for websites and APIs to say “Payment Required” using standard HTTP 402 and to tell you exactly how to pay. See <a href="https://www.x402.org/" target="_blank" rel="noreferrer">x402.org</a>.</p>
+              <p><strong>What does this mean for Cardano?</strong> Your browser uses your wallet to build and sign a Cardano transaction (USDM in this demo) and retries the same URL with the payment attached.</p>
+              <p><strong>Flow (high level):</strong> Request → 402 (includes payment requirements) → Sign & attach payment (X-PAYMENT header) → 200 unlocked.</p>
+              <p class="hint small">This is a technical demo (in development). After payment, we simulate “minting a meme coin” as a fun success screen — not financial advice.</p>
+              <div class="field-row" style="margin-top: 8px;">
+                <button id="introNextBtn" class="default">Next: Payment Requirements</button>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset id="stepReqs" style="margin-top: 10px; display:none;">
+            <legend>Step 1 · Payment Requirements</legend>
+            <div class="field-row-stacked">
+              <div id="reqSummary" class="sub"></div>
+              <p class="hint small">These values are sent by the server in the 402 Payment Required response body (PaymentRequirements). This page embeds them and uses them to build your transaction. When you pay, your signed transaction is sent back in the <code>X-PAYMENT</code> request header.</p>
+              <details class="req-raw">
+                <summary>View raw requirements</summary>
+                <pre id="content" class="content" style="margin-top: 6px"></pre>
+              </details>
+              <div class="field-row" style="margin-top: 8px;">
+                <button id="reqBackBtn">Back</button>
+                <button id="reqNextBtn" class="default">Next: Connect Wallet</button>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset id="stepConnect" style="margin-top: 10px; display:none;">
+            <legend>Step 2 · Connect Wallet</legend>
+            <div class="field-row" style="margin-bottom: 6px;">
+              <label for="walletSelect">Wallet</label>
+              <select id="walletSelect" style="min-width: 200px"></select>
+              <button id="rescanBtn">Rescan</button>
+              <button id="connectBtn" class="default" style="display:none;">Connect</button>
+            </div>
+            <div class="field-row-stacked">
+              <label for="addrBox">Connected address</label>
+              <input id="addrBox" type="text" readonly value="" />
+            </div>
+            <div class="field-row" style="margin-top: 8px;">
+              <button id="connectBackBtn">Back</button>
+              <button id="connectNextBtn" class="default" disabled>Next: Pay</button>
+            </div>
+          </fieldset>
+
+          <fieldset id="stepPay" style="margin-top: 10px; display:none;">
+            <legend>Step 3 · Pay & Access</legend>
+            <div class="field-row">
+              <button id="payBtn" class="default" style="display:none;">Pay & Access</button>
+              <span id="status" style="margin-left: 8px"></span>
+            </div>
+            <div class="field-row" style="margin-top:6px; align-items: center;">
+              <div id="payProgress" class="progressbar" style="width: 320px; display:none;"><div style="width:0%"></div></div>
+              <span id="progressLabel" class="hint small" style="margin-left: 8px; display:none;">Preparing…</span>
+            </div>
+            <p class="hint small" style="margin-top:6px;">Clicking “Pay & Access” constructs and signs a Cardano transaction in your wallet and resends this same URL with the signed tx in the <code>X-PAYMENT</code> header. The server validates and unlocks the content.</p>
+          </fieldset>
+
+          <fieldset id="stepPending" style="margin-top: 10px; display:none;">
+            <legend>Step 4 · Waiting for Settlement</legend>
+            <div class="field-row-stacked">
+              <p class="hint small">We’ve submitted your transaction. We’ll check the blockchain every <strong>10 seconds</strong> and unlock this page once it’s confirmed.</p>
+              <div class="field-row" style="align-items:center; gap:8px;">
+                <div id="waitProgress" class="progressbar" style="width: 380px;"><div style="width:0%"></div></div>
+                <span id="waitLabel" class="hint small">Checking soon…</span>
+              </div>
+              <div class="field-row" style="margin-top:6px;">
+                <label for="txBox">Transaction</label>
+                <input id="txBox" type="text" readonly value="" style="min-width: 520px;" />
+                <button id="checkNowBtn">Check now</button>
+              </div>
+              <div class="field-row" style="margin-top:6px;">
+                <a id="txExplorerLink" href="#" target="_blank" rel="noreferrer" style="display:none;">View on Cardano Explorer</a>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset id="stepSuccess" style="margin-top: 10px; display:none;">
+            <legend>Step 5 · Success</legend>
+            <div class="field-row-stacked">
+              <pre class="ascii-coin">
+                 _____________
+              .-"'           '"-.
+            .'    .-""""-.       '.
+           /     /  __    \        \
+          ;     |  /  \    |        ;
+          |     | | () |   |        |
+          ;      \ \__/   /        ;
+           \      '.    .'        /
+            '.       '-..-'     .'
+              '-._           _.-'
+                   '""-...-""'
+
+                 M E M E   C O I N
+              (test only — just for fun)
+              </pre>
+              <p class="hint small">This page is a <strong>technical test</strong> only — not serious, not financial advice. No real tokens are minted or transferred here.</p>
+              <div class="field-row" style="margin-top:6px;">
+                <a id="successExplorerLink" href="#" target="_blank" rel="noreferrer" style="display:none;">View transaction on Cardano Explorer</a>
+              </div>
+              <div class="status-bar">
+                <p class="status-bar-field">Memecoin Sent! (test, just for fun)</p>
+                <p class="status-bar-field">x402 payment complete</p>
+              </div>
+            </div>
+          </fieldset>
+
+        </div>
+      </div>
+
+      <footer class="footer-note">
+        <small>Demo brought to you by Masumi Network · <a href="https://www.x402.org/" target="_blank" rel="noreferrer">x402.org</a></small>
+      </footer>
+    </main>
+
+    <script>
+      window.__x402Requirements = {{ (requirements or {}) | tojson | safe }};
+      window.__BF_PROJECT_ID = {{ (bf_key or '') | tojson | safe }};
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+  </html>
