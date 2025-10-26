@@ -190,6 +190,11 @@ def status():
         return jsonify({"success": False, "errorReason": "unexpected_settle_error", "transaction": tx}), 200
 
 
+@app.get("/health")
+def health():
+    return jsonify({"ok": True}), 200
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5051"))
     app.run(host="0.0.0.0", port=port, debug=True)
