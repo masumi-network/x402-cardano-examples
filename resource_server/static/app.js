@@ -201,6 +201,7 @@ async function fetchResource(withPayment = false, xPaymentB64 = null) {
       return;
     }
     headers['X-PAYMENT'] = xPaymentB64;
+    if (addrBox && addrBox.value) headers['X-PAYER-ADDRESS'] = addrBox.value;
     lastEncodedPaymentHeader = xPaymentB64;
   }
 
@@ -260,7 +261,9 @@ async function fetchResource(withPayment = false, xPaymentB64 = null) {
       pendingTimer = setInterval(async () => {
         try {
           if (!pendingTxId) return;
-          const s = await fetch(`/?tx=${encodeURIComponent(pendingTxId)}`);
+          const s = await fetch(`/?tx=${encodeURIComponent(pendingTxId)}`, {
+            headers: addrBox && addrBox.value ? { 'X-PAYER-ADDRESS': addrBox.value } : {},
+          });
           if (s.status === 200) {
             clearInterval(pendingTimer);
             pendingTimer = null;
@@ -280,7 +283,9 @@ async function fetchResource(withPayment = false, xPaymentB64 = null) {
         checkNowBtn.onclick = async () => {
           try {
             if (!pendingTxId) return;
-            const s = await fetch(`/?tx=${encodeURIComponent(pendingTxId)}`);
+            const s = await fetch(`/?tx=${encodeURIComponent(pendingTxId)}`, {
+              headers: addrBox && addrBox.value ? { 'X-PAYER-ADDRESS': addrBox.value } : {},
+            });
             if (s.status === 200) {
               clearInterval(pendingTimer);
               pendingTimer = null;

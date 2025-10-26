@@ -44,6 +44,16 @@ PAY_TO = (
 RESOURCE_URL = "/"  # protected resource is the root URL
 MAX_TIMEOUT_SECONDS = 600
 FACILITATOR_URL = os.environ.get("FACILITATOR_URL", "http://127.0.0.1:5051")
+NMKR_API_TOKEN = os.environ.get("NMKR_API_TOKEN", "")
+# Provided MintAndSendSpecific pattern (project/policy/qty/address?blockchain=Cardano)
+NMKR_MINT_URL_TMPL = (
+    "https://studio-api.nmkr.io/v2/MintAndSendSpecific/"
+    "138fa984-45b2-4b3e-ab3a-489228bbe64b/"
+    "f1928a69-cff1-43b7-9765-727bebf6dc78/100/{addr}?blockchain=Cardano"
+)
+
+# Track minted transactions to avoid double-calling (in-memory)
+_MINTED_TX: set[str] = set()
 
 
 def payment_requirements() -> Dict[str, Any]:
@@ -84,6 +94,30 @@ def b64_json_decode(b64_value: str) -> Dict[str, Any]:
 def b64_json_encode(obj: Dict[str, Any]) -> str:
     raw = json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     return base64.b64encode(raw).decode("ascii")
+
+
+def maybe_mint_for_tx(tx_id: str, payer_addr: str | None) -> None:
+    try:
+        if not tx_id or not payer_addr:
+            return
+        if tx_id in _MINTED_TX:
+            return
+        if not NMKR_API_TOKEN:
+            return
+        url = NMKR_MINT_URL_TMPL.format(addr=payer_addr)
+        headers = {
+            "accept": "text/plain",
+            "Authorization": f"Bearer {NMKR_API_TOKEN}",
+        }
+        # Best-effort; do not block the response path too long
+        try:
+            requests.get(url, headers=headers, timeout=10)
+        except Exception:
+            # swallow errors in demo environment
+            pass
+        _MINTED_TX.add(tx_id)
+    except Exception:
+        pass
 
 
 def decode_x_payment_header() -> Tuple[Dict[str, Any] | None, str | None]:
@@ -169,6 +203,9 @@ def protected_root():
             )
             data = r.json() if r.content else {}
             if r.status_code == 200 and data.get("success"):
+                # Mint once on success
+                payer_addr = request.headers.get("X-PAYER-ADDRESS", "").strip()
+                maybe_mint_for_tx(tx_qs, payer_addr)
                 content = {
                     "message": "You’ve unlocked the protected resource via x402.",
                     "resource": "/",
@@ -203,6 +240,9 @@ def protected_root():
         return make_response(jsonify(body), 202)
 
     # Success: return the premium content and include X-PAYMENT-RESPONSE header
+    # Mint once on success
+    payer_addr = request.headers.get("X-PAYER-ADDRESS", "").strip()
+    maybe_mint_for_tx(tx_id or "", payer_addr)
     content = {
         "message": "You’ve unlocked the protected resource via x402.",
         "resource": "/",
