@@ -310,7 +310,8 @@ async function fetchResource(withPayment = false, xPaymentB64 = null) {
       if (window.__x402Requirements) info = window.__x402Requirements;
     }
     lastRequirements = info || lastRequirements || null;
-    setStatus('Payment required.');
+    const err = res.headers.get('X-PAYMENT-ERROR');
+    setStatus('Payment required' + (err ? `: ${err}` : '.'));
     show(connectBtn);
     if (info) updateReqSummary();
     return;

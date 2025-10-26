@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import os
 import time
@@ -94,8 +95,16 @@ def verify():
     x_payment_b64 = body.get("x_payment_b64")
     reqs = body.get("payment_requirements") or {}
     try:
+        print("[/verify] body keys=", list((body or {}).keys()))
+    except Exception:
+        pass
+    try:
         x_payment = decode_x_payment_b64(x_payment_b64)
     except Exception as e:
+        try:
+            print("[/verify] decode error:", e)
+        except Exception:
+            pass
         return jsonify({"isValid": False, "invalidReason": "invalid_payload"}), 200
 
     # Basic checks
@@ -116,11 +125,22 @@ def verify():
     try:
         base64.b64decode(tx_b64)
     except Exception:
+        try:
+            print("[/verify] tx base64 invalid")
+        except Exception:
+            pass
         return jsonify({"isValid": False, "invalidReason": "invalid_payload"}), 200
     except Exception:
+        try:
+            print("[/verify] unexpected verify error")
+        except Exception:
+            pass
         return jsonify({"isValid": False, "invalidReason": "unexpected_verify_error"}), 200
 
     return jsonify({"isValid": True}), 200
+
+
+SUBMITTED: dict[str, str] = {}
 
 
 @app.post("/settle")
@@ -128,6 +148,10 @@ def settle():
     body = request.get_json(silent=True) or {}
     x_payment_b64 = body.get("x_payment_b64")
     reqs = body.get("payment_requirements") or {}
+    try:
+        print("[/settle] body keys=", list((body or {}).keys()))
+    except Exception:
+        pass
 
     try:
         accepts = (reqs.get("accepts") or [])[:1]
@@ -147,19 +171,33 @@ def settle():
         tx_b64 = (x_payment.get("payload") or {}).get("transaction")
         raw_cbor = base64.b64decode(tx_b64)
     except Exception:
+        try:
+            print("[/settle] decode error")
+        except Exception:
+            pass
         return jsonify({"success": False, "errorReason": "invalid_payload", "transaction": ""}), 200
 
-    ok, tx_hash, err = submit_tx_blockfrost(raw_cbor)
-    if not ok:
-        return jsonify({"success": False, "errorReason": err or "invalid_transaction_state", "transaction": ""}), 200
+    # Compute a stable key for idempotency on repeated /settle calls
+    key = hashlib.sha256(raw_cbor).hexdigest()
 
-    # Optional: verify that the transaction contains the right output after it appears on-chain
-    verified = check_tx_output(tx_hash, pay_to, unit, min_amt, wait_seconds=20)
-    if not verified:
-        # Not yet visible/verified on-chain
+    # If we've seen this exact tx before, don't resubmit — just report current status quickly
+    if key in SUBMITTED:
+        tx_hash = SUBMITTED[key]
+        ok_now = check_tx_output(tx_hash, pay_to, unit, min_amt, wait_seconds=1)
+        if ok_now:
+            return jsonify({"success": True, "transaction": tx_hash, "network": NETWORK}), 200
         return jsonify({"success": False, "errorReason": "invalid_transaction_state", "transaction": tx_hash, "pending": True}), 202
 
-    return jsonify({"success": True, "transaction": tx_hash, "network": NETWORK}), 200
+    # First time: submit only and return pending quickly (let client poll /status)
+    ok, tx_hash, err = submit_tx_blockfrost(raw_cbor)
+    if not ok:
+        try:
+            print("[/settle] submit failed: ", err)
+        except Exception:
+            pass
+        return jsonify({"success": False, "errorReason": err or "invalid_transaction_state", "transaction": ""}), 200
+    SUBMITTED[key] = tx_hash
+    return jsonify({"success": False, "errorReason": "invalid_transaction_state", "transaction": tx_hash, "pending": True}), 202
 
 
 @app.get("/supported")

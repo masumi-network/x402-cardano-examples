@@ -139,8 +139,16 @@ def facilitator_verify(x_payment_b64: str, requirements: Dict[str, Any]) -> Tupl
             timeout=15,
         )
         data = r.json() if r.ok else {"isValid": False, "invalidReason": f"HTTP {r.status_code}"}
+        try:
+            print("[verify] status=", r.status_code, "resp=", data)
+        except Exception:
+            pass
         return bool(data.get("isValid")), data.get("invalidReason")
     except Exception as e:
+        try:
+            print("[verify] exception:", e)
+        except Exception:
+            pass
         return False, str(e)
 
 
@@ -155,16 +163,36 @@ def facilitator_settle(x_payment_b64: str, requirements: Dict[str, Any]) -> Tupl
             # Pending responses may come with 202
             if r.status_code == 202:
                 data = r.json()
+                try:
+                    print("[settle] 202 pending resp=", data)
+                except Exception:
+                    pass
                 return False, data.get("transaction"), "invalid_transaction_state"
+            try:
+                print("[settle] non-OK status:", r.status_code, r.text[:200])
+            except Exception:
+                pass
             return False, None, f"HTTP {r.status_code}"
         data = r.json()
         if data.get("success"):
+            try:
+                print("[settle] success resp=", data)
+            except Exception:
+                pass
             return True, data.get("transaction"), None
         # Could be pending
         if r.status_code == 202 or data.get("pending"):
+            try:
+                print("[settle] pending resp=", data)
+            except Exception:
+                pass
             return False, data.get("transaction"), data.get("errorReason") or "invalid_transaction_state"
         return False, None, data.get("errorReason") or "settlement failed"
     except Exception as e:
+        try:
+            print("[settle] exception:", e)
+        except Exception:
+            pass
         return False, None, str(e)
 
 
