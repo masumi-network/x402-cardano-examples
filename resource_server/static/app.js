@@ -339,7 +339,8 @@ async function tryConnectWallet() {
       setStatus(`Connected: ${label}`);
       // Show connected address and enable next step
       try {
-        const { C } = await import('https://unpkg.com/lucid-cardano/web/mod.js?module');
+        const lib = await getLucidLib();
+        const C = lib.C;
         const changeHex = await walletApi.getChangeAddress();
         const bech = C.Address.from_bytes(hexToBytes(changeHex)).to_bech32(undefined);
         if (addrBox) addrBox.value = bech;
@@ -406,6 +407,35 @@ function bytesToBase64(bytes) {
   return btoa(bin);
 }
 
+// Try to load lucid-evolution first; fall back to lucid-cardano web bundle if unavailable.
+let __lucidLib = null;
+async function loadLucidModule() {
+  const urls = [
+    'https://cdn.jsdelivr.net/npm/@lucid-evolution/lucid/web/mod.js?module',
+    'https://unpkg.com/@lucid-evolution/lucid/web/mod.js?module',
+    'https://esm.sh/@lucid-evolution/lucid?target=es2020',
+    'https://unpkg.com/lucid-cardano/web/mod.js?module',
+  ];
+  for (const u of urls) {
+    try {
+      const m = await import(u);
+      if (m && (m.Lucid || (m.default && m.default.Lucid))) return m;
+    } catch (_) {}
+  }
+  throw new Error('Failed to load Lucid library');
+}
+
+async function getLucidLib() {
+  if (__lucidLib) return __lucidLib;
+  const mod = await loadLucidModule();
+  __lucidLib = {
+    Lucid: mod.Lucid || (mod.default && mod.default.Lucid),
+    Blockfrost: mod.Blockfrost || (mod.default && mod.default.Blockfrost),
+    C: (mod.C || mod.CSL || (mod.default && (mod.default.C || mod.default.CSL))),
+  };
+  return __lucidLib;
+}
+
 async function buildPaymentTxB64() {
   if (!lastRequirements || !lastRequirements.accepts || !lastRequirements.accepts.length) {
     throw new Error('No payment requirements available');
@@ -427,7 +457,7 @@ async function buildPaymentTxB64() {
   appendDebug(`required qty=${qtyStr}`);
 
   // Dynamically import Lucid (web bundle includes Blockfrost provider and CSL as export `C`)
-  const { Lucid, Blockfrost, C } = await import('https://unpkg.com/lucid-cardano/web/mod.js?module');
+  const { Lucid, Blockfrost, C } = await getLucidLib();
   const network = 'Mainnet';
   updateProgress(20, 'Loading libraries…');
 
