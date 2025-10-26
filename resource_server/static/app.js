@@ -339,10 +339,9 @@ async function tryConnectWallet() {
       setStatus(`Connected: ${label}`);
       // Show connected address and enable next step
       try {
-        const mod = await import('https://esm.sh/@lucid-evolution/lucid?target=es2020');
-        const C_ = mod.C || mod.CSL;
+        const { C } = await import('https://unpkg.com/lucid-cardano/web/mod.js?module');
         const changeHex = await walletApi.getChangeAddress();
-        const bech = C_.Address.from_bytes(hexToBytes(changeHex)).to_bech32(undefined);
+        const bech = C.Address.from_bytes(hexToBytes(changeHex)).to_bech32(undefined);
         if (addrBox) addrBox.value = bech;
         if (connectNextBtn) connectNextBtn.disabled = false;
       } catch (_) {}
@@ -427,8 +426,8 @@ async function buildPaymentTxB64() {
   appendDebug(`target unit=${unit}`);
   appendDebug(`required qty=${qtyStr}`);
 
-  // Dynamically import lucid-evolution (modern Lucid) via esm.sh
-  const { Lucid, Blockfrost, C, CSL } = await import('https://esm.sh/@lucid-evolution/lucid?target=es2020');
+  // Dynamically import Lucid (web bundle includes Blockfrost provider and CSL as export `C`)
+  const { Lucid, Blockfrost, C } = await import('https://unpkg.com/lucid-cardano/web/mod.js?module');
   const network = 'Mainnet';
   updateProgress(20, 'Loading libraries…');
 
