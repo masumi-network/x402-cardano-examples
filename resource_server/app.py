@@ -255,6 +255,8 @@ def protected_root():
     return resp
 
 
+
+
 @app.get("/status")
 def status_proxy():
     tx = request.args.get("tx", "").strip()
