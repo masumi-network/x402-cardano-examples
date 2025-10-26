@@ -74,7 +74,7 @@ Steps (one‑time):
 1) Connect the GitHub repo in Railway.
 
 2) Create “facilitator” service
-- Root Directory: `facilitator_server`
+- Root Directory: `facilitator_server` (or `.` — both work)
 - Start Command: `python app.py`
 - Variables:
   - `BLOCKFROST_PROJECT_ID` = your key (from Blockfrost)
@@ -83,7 +83,7 @@ Steps (one‑time):
 - Deploy. Copy the public URL (e.g., `https://facilitator.up.railway.app`).
 
 3) Create “resource” service
-- Root Directory: `resource_server`
+- Root Directory: `resource_server` (or `.` — both work)
 - Start Command: `python app.py`
 - Variables:
   - `FACILITATOR_URL` = facilitator public URL from step 2
@@ -92,9 +92,15 @@ Steps (one‑time):
 - Deploy. Open the resource URL in your desktop browser with a Cardano wallet.
 
 Notes:
-- You don’t need Docker for this setup. Railway’s Python builder just works.
+- You don’t need Docker for this setup. Railway’s Python builder (Nixpacks) just works.
 - The UI runs entirely from the resource server; it posts payment to the resource server, which talks to the facilitator server.
 - Ensure the resource server uses the facilitator URL (set the env variable, then redeploy).
+- If you use subfolders as Root Directory, requirements are provided via a small `requirements.txt` in each subfolder that references the root (`-r ../requirements.txt`). If you set Root Directory to `.`, Railway will pick up the root `requirements.txt` directly.
+
+Troubleshooting build on Railway:
+- If build fails with “no requirements found”, set Root Directory to `.` or keep the provided `requirements.txt` inside each subfolder.
+- If Python version issues arise, set an env var `PYTHON_VERSION=3.10.13` in Railway.
+- Ensure BLOCKFROST_PROJECT_ID is set on the facilitator service.
 
 ## How it works (quick)
 
