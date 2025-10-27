@@ -176,7 +176,9 @@ function updateReqSummary() {
   const decimals = (acc.extra && acc.extra.decimals) || 0;
   const qtyUnits = BigInt(acc.maxAmountRequired || '0');
   const qtyHuman = formatQty(qtyUnits, decimals);
-  if (reqSummaryEl) reqSummaryEl.textContent = `Pay ${qtyHuman} USDM to ${payTo} on Cardano Mainnet (policy ${policyId}).`;
+  if (reqSummaryEl) {
+    reqSummaryEl.textContent = `Now the 402 Status Message of this Website has given us the following instructions: Pay ${qtyHuman} USDM to ${payTo} on Cardano Mainnet). In the next step we will now construct this transction for you.`;
+  }
   try { if (contentEl) contentEl.textContent = JSON.stringify(lastRequirements, null, 2); } catch (_) {}
 }
 

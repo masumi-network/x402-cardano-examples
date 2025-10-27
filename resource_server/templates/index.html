@@ -59,7 +59,7 @@ __  __/ /| | |/' |`' / /' | /  \/ __ _ _ __ __| | __ _ _ __   ___
               <p><strong>What is the x402 Standard?</strong> It’s a simple way for websites and APIs to say “Payment Required” using standard HTTP 402 and to tell you exactly how to pay. See <a href="https://www.x402.org/" target="_blank" rel="noreferrer">x402.org</a>.</p>
               <p><strong>What does this mean for Cardano?</strong> Your browser uses your wallet to build and sign a Cardano transaction (USDM in this demo) and retries the same URL with the payment attached.</p>
               <p><strong>Flow (high level):</strong> Request → 402 (includes payment requirements) → Sign & attach payment (X-PAYMENT header) → 200 unlocked.</p>
-              <p class="hint small">This is a technical demo (in development). After payment, we simulate “minting a meme coin” as a fun success screen — not financial advice.</p>
+              <p class="hint small">After payment, we will mint a memecoin as a fun token of participation on the success screen. This is not an investment, it's just a simple Proof-Of-Concept. Do not speculate on the coin.</p>
               <div class="field-row" style="margin-top: 8px;">
                 <button id="introNextBtn" class="default">Next: Payment Requirements</button>
               </div>
@@ -75,7 +75,7 @@ __  __/ /| | |/' |`' / /' | /  \/ __ _ _ __ __| | __ _ _ __   ___
                 <summary>View raw requirements</summary>
                 <pre id="content" class="content" style="margin-top: 6px"></pre>
               </details>
-              <div class="field-row" style="margin-top: 8px;">
+              <div class="field-row" style="margin-top: 8px; align-items: center; gap: 8px;">
                 <button id="reqBackBtn">Back</button>
                 <button id="reqNextBtn" class="default">Next: Connect Wallet</button>
               </div>
@@ -158,7 +158,7 @@ __  __/ /| | |/' |`' / /' | /  \/ __ _ _ __ __| | __ _ _ __   ___
       </div>
 
       <footer class="footer-note">
-        <small>Demo brought to you by Masumi Network · <a href="https://www.x402.org/" target="_blank" rel="noreferrer">x402.org</a></small>
+        <small>Demo brought to you by <a href="https://masumi.network" target="_blank" rel="noreferrer">Masumi Network</a> · <a href="https://www.x402.org/" target="_blank" rel="noreferrer">x402.org</a></small>
       </footer>
     </main>
 
